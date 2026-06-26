@@ -1,45 +1,67 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter } from 'react-router-dom';
+import { ReactLenis } from 'lenis/react';
+import { Toaster } from 'react-hot-toast';
+
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { ThemeProvider } from './context/ThemeContext';
-import { TodoProvider, useTodoContext } from './context/TodoContext';
-import Navbar from './components/Navbar';
-import Landing from './pages/Landing';
-import Dashboard from './pages/Dashboard';
+import { TodoProvider } from './context/TodoContext';
+import Navbar from './components/layout/Navbar';
+
+// Sections
+import HeroExperience from './components/sections/HeroExperience';
+import ProblemStorytelling from './components/sections/ProblemStorytelling';
+import SolutionShowcase from './components/sections/SolutionShowcase';
+import InteractiveDashboard from './components/sections/InteractiveDashboard';
+import ProductivityAnalytics from './components/sections/ProductivityAnalytics';
+import SmartCategories from './components/sections/SmartCategories';
+import GoalTracking from './components/sections/GoalTracking';
+import CalendarExperience from './components/sections/CalendarExperience';
+import HorizontalShowcase from './components/sections/HorizontalShowcase';
+import AIAssistant from './components/sections/AIAssistant';
+import Testimonials from './components/sections/Testimonials';
+import FooterExperience from './components/sections/FooterExperience';
+
 import './index.css';
+import 'lenis/dist/lenis.css';
 
-function AppLayout() {
-  const { todos } = useTodoContext();
-  const completed = todos.filter(t => t.completed).length;
-
+function AppContent() {
   return (
-    <div className="app">
-      <Navbar todoCount={todos.length} completedCount={completed} />
-      <Routes>
-        <Route path="/" element={<Landing />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="*" element={
-          <div style={{ textAlign: 'center', padding: '120px 24px', color: 'var(--text-muted)' }}>
-            <div style={{ fontSize: 64, marginBottom: 16 }}>🔍</div>
-            <h2 style={{ fontFamily: 'Outfit, sans-serif', marginBottom: 8 }}>Page Not Found</h2>
-            <p>This page doesn't exist.</p>
-            <a href="/" style={{ display: 'inline-block', marginTop: 20, color: 'var(--accent)', fontWeight: 700 }}>
-              ← Back to Home
-            </a>
-          </div>
-        } />
-      </Routes>
+    <div className="relative w-full bg-background dark:bg-background-dark text-gray-900 dark:text-gray-100 overflow-x-hidden">
+      <Navbar />
+      
+      <main>
+        <HeroExperience />
+        <ProblemStorytelling />
+        <SolutionShowcase />
+        <InteractiveDashboard />
+        <ProductivityAnalytics />
+        <SmartCategories />
+        <GoalTracking />
+        <CalendarExperience />
+        <HorizontalShowcase />
+        <AIAssistant />
+        <Testimonials />
+      </main>
+
+      <FooterExperience />
+      <Toaster position="bottom-right" />
     </div>
   );
 }
 
 function App() {
   return (
-    <ThemeProvider>
-      <TodoProvider>
-        <BrowserRouter>
-          <AppLayout />
-        </BrowserRouter>
-      </TodoProvider>
-    </ThemeProvider>
+    <ReactLenis root options={{ lerp: 0.1, duration: 1.5, smoothWheel: true }}>
+      <ThemeProvider>
+        <TodoProvider>
+          <BrowserRouter>
+            <ErrorBoundary>
+              <AppContent />
+            </ErrorBoundary>
+          </BrowserRouter>
+        </TodoProvider>
+      </ThemeProvider>
+    </ReactLenis>
   );
 }
 

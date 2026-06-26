@@ -1,25 +1,27 @@
 import { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
 
-// Generates a random ID for local tasks
-const generateId = () => Math.random().toString(36).substr(2, 9);
+const API_URL = 'http://localhost:5000/api/todos';
 
 export function useTodos() {
   const [todos, setTodos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Load from localStorage on mount
-  const fetchTodos = useCallback(() => {
+  // Added state for filtering and search
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterCategory, setFilterCategory] = useState('All');
+  const [filterStatus, setFilterStatus] = useState('All'); // 'All', 'Completed', 'Pending'
+
+  const fetchTodos = useCallback(async () => {
     try {
       setLoading(true);
-      const saved = localStorage.getItem('taskflow_todos');
-      if (saved) {
-        setTodos(JSON.parse(saved));
-      }
+      const { data } = await axios.get(API_URL);
+      setTodos(data.data || []);
       setError(null);
     } catch (err) {
-      console.error('Failed to load from local storage', err);
-      setError('Failed to load tasks');
+      console.error('Failed to load tasks', err);
+      setError('Failed to load tasks from server');
     } finally {
       setLoading(false);
     }
@@ -29,50 +31,94 @@ export function useTodos() {
     fetchTodos();
   }, [fetchTodos]);
 
-  // Save to localStorage whenever todos change
-  useEffect(() => {
-    if (!loading) {
-      localStorage.setItem('taskflow_todos', JSON.stringify(todos));
+  const createTodo = async (todoData) => {
+    try {
+      const { data } = await axios.post(API_URL, todoData);
+      setTodos(prev => [data.data, ...prev]);
+      return data.data;
+    } catch (err) {
+      console.error('Create error', err);
+      throw err;
     }
-  }, [todos, loading]);
-
-  const createTodo = async (data) => {
-    const newTask = {
-      _id: generateId(),
-      ...data,
-      completed: false,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    setTodos(prev => [newTask, ...prev]);
-    return newTask;
   };
 
-  const updateTodo = async (id, data) => {
-    setTodos(prev => prev.map(t => {
-      if (t._id === id) {
-        return { ...t, ...data, updatedAt: new Date().toISOString() };
-      }
-      return t;
-    }));
+  const updateTodo = async (id, todoData) => {
+    try {
+      const { data } = await axios.put(`${API_URL}/${id}`, todoData);
+      setTodos(prev => prev.map(t => (t._id === id ? data.data : t)));
+      return data.data;
+    } catch (err) {
+      console.error('Update error', err);
+      throw err;
+    }
   };
 
   const toggleTodo = async (id) => {
-    setTodos(prev => prev.map(t => {
-      if (t._id === id) {
-        return { ...t, completed: !t.completed, updatedAt: new Date().toISOString() };
-      }
-      return t;
-    }));
+    try {
+      const { data } = await axios.patch(`${API_URL}/${id}/toggle`);
+      setTodos(prev => prev.map(t => (t._id === id ? data.data : t)));
+    } catch (err) {
+      console.error('Toggle error', err);
+      throw err;
+    }
   };
 
   const deleteTodo = async (id) => {
-    setTodos(prev => prev.filter(t => t._id !== id));
+    try {
+      await axios.delete(`${API_URL}/${id}`);
+      setTodos(prev => prev.filter(t => t._id !== id));
+    } catch (err) {
+      console.error('Delete error', err);
+      throw err;
+    }
   };
 
   const clearCompleted = async () => {
-    setTodos(prev => prev.filter(t => !t.completed));
+    try {
+      await axios.delete(`${API_URL}/completed`);
+      setTodos(prev => prev.filter(t => !t.completed));
+    } catch (err) {
+      console.error('Clear completed error', err);
+      throw err;
+    }
   };
 
-  return { todos, loading, error, fetchTodos, createTodo, updateTodo, toggleTodo, deleteTodo, clearCompleted };
+  const filteredTodos = todos.filter(todo => {
+    // Search
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const t = (todo.title || '').toLowerCase();
+      const d = (todo.description || '').toLowerCase();
+      if (!t.includes(q) && !d.includes(q)) return false;
+    }
+    // Category
+    const cat = (todo.category || 'personal').toLowerCase();
+    if (filterCategory !== 'All' && cat !== filterCategory.toLowerCase()) {
+      return false;
+    }
+    // Status
+    if (filterStatus === 'Completed' && !todo.completed) return false;
+    if (filterStatus === 'Pending' && todo.completed) return false;
+    
+    return true;
+  });
+
+  return {
+    todos,
+    filteredTodos,
+    loading,
+    error,
+    searchQuery,
+    setSearchQuery,
+    filterCategory,
+    setFilterCategory,
+    filterStatus,
+    setFilterStatus,
+    fetchTodos,
+    createTodo,
+    updateTodo,
+    toggleTodo,
+    deleteTodo,
+    clearCompleted
+  };
 }

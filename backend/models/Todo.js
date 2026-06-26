@@ -38,8 +38,16 @@ const todoSchema = new mongoose.Schema(
     },
     category: {
       type: String,
-      enum: ['study', 'task', 'goal'],
-      default: 'task',
+      enum: ['work', 'personal', 'study', 'shopping'],
+      default: 'personal',
+    },
+    isPinned: {
+      type: Boolean,
+      default: false,
+    },
+    isArchived: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true }

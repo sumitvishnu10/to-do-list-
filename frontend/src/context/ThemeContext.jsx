@@ -8,7 +8,9 @@ export function ThemeProvider({ children }) {
   });
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
+    const root = window.document.documentElement;
+    root.classList.remove('light', 'dark');
+    root.classList.add(theme);
     localStorage.setItem('taskflow-theme', theme);
   }, [theme]);
 
